@@ -1,0 +1,19 @@
+{
+  "name": "@circle-t3-demo/payment-relay",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.0.0"
+  }
+}

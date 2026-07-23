@@ -1,0 +1,110 @@
+[
+  {
+    "resource": "https://api.tavily.com/search",
+    "type": "http",
+    "x402Version": 2,
+    "accepts": [
+      {
+        "scheme": "exact",
+        "network": "eip155:8453",
+        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "amount": "15000",
+        "extra": { "name": "exact", "version": "1" }
+      }
+    ],
+    "metadata": {
+      "provider": {
+        "name": "Tavily",
+        "website": "https://tavily.com",
+        "description": "Web search API for AI agents, payable per call via x402",
+        "category": "WEB_RESEARCH",
+        "tags": ["x402", "search", "research", "agents"]
+      },
+      "path": "/search",
+      "method": "POST",
+      "description": "Web search query",
+      "amount_usdc": 0.015
+    }
+  },
+  {
+    "resource": "https://api.parallel.ai/v1beta/tasks/runs",
+    "type": "http",
+    "x402Version": 2,
+    "accepts": [
+      {
+        "scheme": "exact",
+        "network": "eip155:8453",
+        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "amount": "18000",
+        "extra": { "name": "exact", "version": "1" }
+      }
+    ],
+    "metadata": {
+      "provider": {
+        "name": "Parallel",
+        "website": "https://parallel.ai",
+        "description": "Web research task execution API for AI agents, payable per call via x402",
+        "category": "WEB_RESEARCH",
+        "tags": ["x402", "research", "tasks", "agents"]
+      },
+      "path": "/v1beta/tasks/runs",
+      "method": "POST",
+      "description": "Run a research task",
+      "amount_usdc": 0.018
+    }
+  },
+  {
+    "resource": "https://stablephone.dev/api/v1/call",
+    "type": "http",
+    "x402Version": 2,
+    "accepts": [
+      {
+        "scheme": "exact",
+        "network": "eip155:8453",
+        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "amount": "540000",
+        "extra": { "name": "exact", "version": "1" }
+      }
+    ],
+    "metadata": {
+      "provider": {
+        "name": "StablePhone",
+        "website": "https://stablephone.dev",
+        "description": "Outbound phone calls for AI agents, up to 30 minutes, payable per call via x402",
+        "category": "COMMUNICATIONS",
+        "tags": ["x402", "phone", "voice", "agents"]
+      },
+      "path": "/api/v1/call",
+      "method": "POST",
+      "description": "Place an outbound phone call",
+      "amount_usdc": 0.54
+    }
+  },
+  {
+    "resource": "https://stablephone.dev/api/v1/call/priority",
+    "type": "http",
+    "x402Version": 2,
+    "accepts": [
+      {
+        "scheme": "exact",
+        "network": "eip155:8453",
+        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "amount": "890000",
+        "extra": { "name": "exact", "version": "1" }
+      }
+    ],
+    "metadata": {
+      "provider": {
+        "name": "StablePhone",
+        "website": "https://stablephone.dev",
+        "description": "Priority call with live transfer to a human, payable per call via x402",
+        "category": "COMMUNICATIONS",
+        "tags": ["x402", "phone", "voice", "agents", "escalation"]
+      },
+      "path": "/api/v1/call/priority",
+      "method": "POST",
+      "description": "Priority call with human transfer",
+      "amount_usdc": 0.89
+    }
+  }
+]
