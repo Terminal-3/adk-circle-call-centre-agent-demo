@@ -1,0 +1,31 @@
+# ==============================================================================
+# ANNOTATED FOR THIS DEMO TEMPLATE
+# This is the crate manifest for the Terminal 3 TEE contract. It compiles to a
+# WASM component (`crate-type = ["cdylib", "lib"]`) that the T3 node loads and
+# invokes through the WIT world declared in wit/world.wit. Dependencies are
+# alloc-only, no_std-friendly crates (JSON, hex) because this code runs inside
+# a WASM sandbox where the only "outside world" access is through the
+# host:interfaces/host:tenant imports — no filesystem, no threads, no std env.
+# ==============================================================================
+[package]
+name = "guarded-commerce"
+version = "0.1.3"
+edition = "2021"
+description = "Terminal 3 x Circle Guarded Agent Commerce demo — TEE-enforced spend policy for an agent's Circle x402 payments"
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+wit-bindgen = { version = "0.49", default-features = false, features = ["macros", "realloc"] }
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+hex = { version = "0.4", default-features = false, features = ["alloc"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true

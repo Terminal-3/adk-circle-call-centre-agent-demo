@@ -1,0 +1,56 @@
+// ==============================================================================
+// ANNOTATED FOR THIS DEMO TEMPLATE
+// WIT (WebAssembly Interface Type) defines the typed boundary between this
+// contract's WASM and the T3 node host: what host capabilities the contract is
+// allowed to import (tenant-context, logging, kv-store, http), and what
+// functions the contract exports for the node to call (pay-for-service,
+// get-ledger). wit_bindgen::generate! in lib.rs turns this file into Rust
+// types/traits at build time — this is the contract, Rust code just implements it.
+// ==============================================================================
+/// guarded-commerce WIT world — Terminal 3 x Circle "Guarded Agent Commerce" demo.
+///
+/// Imports required host capabilities:
+///   - tenant-context: tenant DID, used to build the full `z:<tid>:<map>` KV names
+///   - logging:        debug / info / error lines
+///   - kv-store:       reads `policy` + `secrets`, reads/writes `ledger`
+///   - http:           the single outbound call to our own payment-relay service
+///     (the relay — not this contract — talks to the real Circle CLI/x402 flow)
+///
+/// No `signing` or `outbox` import: both are implemented in the real host ABI
+/// (confirmed by reading the vendored host-interfaces package) but the TEE
+/// runtime's capability ceiling does not link them into tenant (z:) worlds yet
+/// ("Coming soon" in host-api.mdx) — so this contract deliberately does not
+/// depend on either. See docs/DEVELOPER_BUILD_LOG.md §3a.
+package z:guarded-commerce@0.1.0;
+
+world guarded-commerce {
+    import host:tenant/tenant-context@1.0.0;
+    import host:interfaces/logging@2.1.0;
+    import host:interfaces/kv-store@2.1.0;
+    import host:interfaces/http@2.1.0;
+
+    export contracts;
+}
+
+interface contracts {
+    /// Standard 3-field envelope used by all contracts callable from the node.
+    record generic-input {
+        input:        option<list<u8>>,
+        user-profile: option<list<u8>>,
+        context:      option<list<u8>>,
+    }
+
+    /// Enforce policy (host allowlist, per-call cap, session budget, idempotency
+    /// dedupe) then call the payment relay to actually settle via Circle's x402
+    /// flow. Any policy failure returns `policy_denied: <reason>` WITHOUT
+    /// reading secrets or making any outbound call.
+    /// Input  (JSON): { service_url, method, amount_usdc, payload, idempotency_key }
+    /// Output (JSON): { authorized, remaining_budget, relay_ref, service_response }
+    pay-for-service: func(req: generic-input) -> result<list<u8>, string>;
+
+    /// Read-only fold over the `ledger` map — running total + all entries
+    /// (paid and denied). Used by the dashboard as the source of truth,
+    /// independent of what the agent process itself reports.
+    /// Output (JSON): { running_total, session_budget, entries: [...] }
+    get-ledger: func(req: generic-input) -> result<list<u8>, string>;
+}
