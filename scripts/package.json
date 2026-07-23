@@ -1,0 +1,33 @@
+{
+  "name": "@circle-t3-demo/scripts",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "setup": "tsx setup.ts",
+    "grant": "tsx grant.ts",
+    "grant-raw": "tsx grant-raw.ts",
+    "revoke": "tsx revoke.ts",
+    "reset-budget": "tsx reset-budget.ts",
+    "mock-relay": "tsx mock-relay.ts",
+    "demo-replay": "tsx demo-replay.ts",
+    "test-pay": "tsx test-pay.ts",
+    "test-agent-credits": "tsx test-agent-credits.ts",
+    "test-contract-logs": "tsx test-contract-logs.ts",
+    "test-agent-auth": "tsx test-agent-auth.ts",
+    "update-secret": "tsx update-secret.ts",
+    "fix-map-acl": "tsx fix-map-acl.ts",
+    "update-policy": "tsx update-policy.ts",
+    "test-get-ledger": "tsx test-get-ledger.ts",
+    "test-process-payment": "tsx test-process-payment.ts"
+  },
+  "dependencies": {
+    "@terminal3/t3n-sdk": "^4.2.0",
+    "ethers": "^6.13.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
+  }
+}
