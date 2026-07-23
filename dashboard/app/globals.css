@@ -1,0 +1,106 @@
+/* Global stylesheet for the whole dashboard, loaded once from app/layout.tsx.
+   Defines the CSS custom properties (colors for light/dark mode, status
+   colors, series colors) that every component below reads via var(--name),
+   plus the shared .panel/.panel-title/.mono utility classes and the
+   chat-vs-dashboard split-screen layout used on the replay page. */
+/* Palette per the dataviz skill's reference instance (references/palette.md) --
+   both modes selected, status colors reserved and never reused as categorical. */
+:root {
+  --surface-1: #fcfcfb;
+  --page-plane: #f9f9f7;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --gridline: #e1e0d9;
+  --baseline: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.1);
+
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+
+  --series-blue: #2a78d6;
+  --series-blue-light: #cde2fb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-1: #1a1a19;
+    --page-plane: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255, 255, 255, 0.1);
+
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-serious: #ec835a;
+    --status-critical: #e66767;
+
+    --series-blue: #3987e5;
+    --series-blue-light: #184f95;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background: var(--page-plane);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin: 0 0 16px 0;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Split screen: chat on the left, the enforcement dashboard on the right --
+   same content, two surfaces (what was asked vs. what was actually allowed). */
+.replay-split {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.replay-split .chat-col {
+  position: sticky;
+  top: 24px;
+  height: calc(100vh - 48px);
+  min-height: 420px;
+}
+
+@media (max-width: 860px) {
+  .replay-split {
+    grid-template-columns: 1fr;
+  }
+
+  .replay-split .chat-col {
+    position: static;
+    height: 480px;
+  }
+}
