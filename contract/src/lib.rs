@@ -22,7 +22,7 @@
 //! source of truth, independent of what the agent process self-reports.
 //!
 //! Revocation is not a function on this contract: the data owner clears the
-//! agent's `agent-auth-update` grant for this contract's allowed hosts, and
+//! agent's member-delegation grant for this contract's allowed hosts, and
 //! the next `pay-for-service` call's outbound call to the relay fails with
 //! `host/http.egress_denied` — the same mechanism `z-tenant-flight` and the
 //! prior `curve-demo` both rely on.

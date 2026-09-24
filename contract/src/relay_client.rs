@@ -8,7 +8,7 @@
 // ==============================================================================
 //! The contract's one and only outbound call: POST to our own payment-relay,
 //! authenticated with a shared secret sealed in `z:<tid>:secrets`. Revoking
-//! the calling agent's `agent-auth-update` grant on this host is what makes
+//! the calling agent's member-delegation grant on this host is what makes
 //! this call start failing with `host/http.egress_denied` — the same,
 //! already-proven revocation path `curve-demo` used.
 

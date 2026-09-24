@@ -8,7 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@terminal3/t3n-sdk": "^4.2.0",
+    "@terminal3/t3n-sdk": "^5.21.0",
     "next": "^15.0.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0"

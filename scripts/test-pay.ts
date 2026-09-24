@@ -9,7 +9,7 @@
 // the LLM loop entirely, to isolate "does the real Terminal 3 contract -> relay
 // call work" from "does the agent loop work." Not part of the demo itself --
 // a debugging tool, kept here for any future re-verification.
-import { getScriptVersion, getNodeUrl } from "@terminal3/t3n-sdk";
+import { getContractVersion, getNodeUrl } from "@terminal3/t3n-sdk";
 import { authenticate, requireEnv, CONTRACT_TAIL } from "./lib.js";
 
 const AGENT_KEY = requireEnv("AGENT_KEY");
@@ -32,21 +32,20 @@ const PAYLOAD = process.argv[5] ? JSON.parse(process.argv[5]) : { query: "test" 
 async function main() {
   const { t3n } = await authenticate(AGENT_KEY);
   const tenantId = TENANT_DID.slice("did:t3n:".length);
-  const scriptName = `z:${tenantId}:${CONTRACT_TAIL}`;
-  const scriptVersion = await getScriptVersion(getNodeUrl(), scriptName);
+  const contractId = `z:${tenantId}:${CONTRACT_TAIL}`;
+  const contractVersion = await getContractVersion(getNodeUrl(), contractId);
 
-  console.log(`calling pay-for-service on ${scriptName}@${scriptVersion}`);
+  console.log(`calling pay-for-service on ${contractId}@${contractVersion}`);
   console.log(`service_url=${SERVICE_URL} method=${METHOD} amount_usdc=${AMOUNT_USDC} payload=${JSON.stringify(PAYLOAD)}`);
 
   const result = await t3n.executeAndDecode({
-    script_name: scriptName,
-    script_version: scriptVersion,
+    contract_id: contractId,
+    contract_version: contractVersion,
     function_name: "pay-for-service",
     // Delegated call -- without this, pii_did defaults to the agent's own
-    // DID, so the node checks AGENT_AUTH_MAP[agent_did] (empty) instead of
-    // AGENT_AUTH_MAP[tenant_did] (where the grant actually lives), which
-    // surfaces as host/http.egress_denied with allowed=None. Root-caused
-    // with Terminal 3's backend team -- see docs/DEVELOPER_BUILD_LOG.md §3o.
+    // DID, so the node reads the agent's own delegation document (empty)
+    // instead of the tenant's, where the grant actually lives, which
+    // surfaces as host/http.egress_denied with allowed=None.
     pii_did: TENANT_DID,
     input: {
       service_url: SERVICE_URL,

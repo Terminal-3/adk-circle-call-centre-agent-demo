@@ -22,7 +22,7 @@ pub struct Policy {
     pub session_budget_usdc: f64,
     /// Hosts of the **third-party marketplace services** the agent is allowed to
     /// direct a payment to (e.g. `nano.blockrun.ai`) — extracted from `req.service_url`.
-    /// This is a distinct dimension from Terminal 3's own `agent-auth-update` grant,
+    /// This is a distinct dimension from Terminal 3's own member-delegation grant,
     /// which separately gates the *contract's* fixed outbound call to our own relay
     /// (see `scripts/grant.ts` / `ARCHITECTURE.md`). Conflating the two was a real bug
     /// here once: seeding this list with the relay's own host guarantees every real

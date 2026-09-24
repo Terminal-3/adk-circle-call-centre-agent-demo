@@ -5,11 +5,11 @@
 // RUN: npm run grant --workspace scripts
 //
 // NOTE on the two layers of access control (a common point of confusion):
-//   - THIS script (agent-auth-update, via updateAgentAuth) controls whether
-//     the AGENT IDENTITY itself is allowed to invoke given functions on a
-//     given contract, and which HOSTS the contract's outbound egress may
-//     reach on this agent's behalf. It's Terminal 3 platform-level identity
-//     + network authorization.
+//   - THIS script (member-delegation-update, via updateMemberDelegation)
+//     controls whether the AGENT IDENTITY itself is allowed to invoke given
+//     functions on a given contract, and which HOSTS the contract's outbound
+//     egress may reach on this agent's behalf. It's Terminal 3 platform-level
+//     identity + network authorization.
 //   - The `host_allowlist` inside the POLICY blob (seeded by setup.ts /
 //     update-policy.ts) is a completely different, business-logic layer: it's
 //     the contract's own rule about which marketplace SELLERS it's willing
@@ -20,10 +20,10 @@
 // `pay-for-service` and `get-ledger` on our contract, and the CONTRACT's
 // outbound egress (to the relay only) is authorized for this agent.
 //
-// Must be run as the TENANT/data-owner (T3N_API_KEY) -- `updateAgentAuth`
+// Must be run as the TENANT/data-owner (T3N_API_KEY) -- `updateMemberDelegation`
 // requires the caller be "the delegating user, authenticated as themselves"
 // (see node_modules/@terminal3/t3n-sdk's own .d.ts docstring).
-import { TenantClient, getNodeUrl } from "@terminal3/t3n-sdk";
+import { TenantClient, getNodeUrl, type BoundGrant } from "@terminal3/t3n-sdk";
 import { authenticate, requireEnv, CONTRACT_TAIL } from "./lib.js";
 
 const T3N_API_KEY = requireEnv("T3N_API_KEY");
@@ -45,12 +45,22 @@ async function main() {
   const tenant = new TenantClient({ t3n, baseUrl: getNodeUrl(), tenantDid });
   const tenantScript = tenant.canonicalName(CONTRACT_TAIL);
 
-  const result = await t3n.updateAgentAuth(agentDid, {
-    scriptName: tenantScript,
-    versionReq: null, // match any registered version
-    functions: ["pay-for-service", "get-ledger"],
-    allowedHosts: [relayHost(RELAY_BASE_URL)],
-  });
+  // One grant row per function: a row authorizes exactly one function, so the
+  // egress allowance is repeated on each. Omitting `version_req` matches any
+  // registered version of the contract.
+  const grants: BoundGrant[] = ["pay-for-service", "get-ledger"].map((fn) => ({
+    grantee: agentDid,
+    contract_id: tenantScript,
+    function: fn,
+    scopes: [],
+    allowed_hosts: [relayHost(RELAY_BASE_URL)],
+  }));
+
+  // Both rows go in ONE call. `updateMemberDelegation` is a read-merge-write of
+  // the whole delegation document, so calling it once per row races against
+  // itself: the second call's read can start before the first call's write
+  // lands, and its merge then drops that row.
+  const result = await t3n.updateMemberDelegation(grants);
 
   console.log(`granted ${agentDid} -> ${tenantScript} (pay-for-service, get-ledger)`);
   console.log(`allowed host: ${relayHost(RELAY_BASE_URL)}`);

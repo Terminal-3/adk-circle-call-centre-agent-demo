@@ -15,21 +15,21 @@
 // egress_denied), that isolates our own egress_denied blocker to something
 // specific to `guarded-commerce`'s own grant/contract, rather than a general
 // platform-wide inability to authorize a delegated agent's outbound call.
-import { getScriptVersion, getNodeUrl } from "@terminal3/t3n-sdk";
+import { getContractVersion, getNodeUrl } from "@terminal3/t3n-sdk";
 import { authenticate, requireEnv } from "./lib.js";
 
 const AGENT_KEY = requireEnv("AGENT_KEY");
-const SCRIPT_NAME = "process-payment";
+const CONTRACT_ID = "process-payment";
 const FUNCTION_NAME = "process-payment";
 
 async function main() {
   const { t3n } = await authenticate(AGENT_KEY);
-  const scriptVersion = await getScriptVersion(getNodeUrl(), SCRIPT_NAME);
+  const contractVersion = await getContractVersion(getNodeUrl(), CONTRACT_ID);
 
-  console.log(`calling ${FUNCTION_NAME} on ${SCRIPT_NAME}@${scriptVersion}`);
+  console.log(`calling ${FUNCTION_NAME} on ${CONTRACT_ID}@${contractVersion}`);
   const result = await t3n.executeAndDecode({
-    script_name: SCRIPT_NAME,
-    script_version: scriptVersion,
+    contract_id: CONTRACT_ID,
+    contract_version: contractVersion,
     function_name: FUNCTION_NAME,
     input: {},
   });

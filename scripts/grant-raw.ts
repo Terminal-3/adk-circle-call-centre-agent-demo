@@ -1,32 +1,40 @@
-// WHAT: Diagnostic-only variant of grant.ts -- calls the low-level
-// `tee:user/contracts` agent-auth-update function directly instead of going
-// through the SDK's updateAgentAuth() wrapper, to rule out a wrapper bug.
+// WHAT: Diagnostic-only variant of grant.ts -- posts the raw
+// `member-delegation-update` document to `tee:authorisations/contracts`
+// directly instead of going through the SDK's updateMemberDelegation()
+// wrapper, so you can see exactly what the contract receives.
 // WHEN: Only if you suspect grant.ts's wrapper isn't behaving as expected --
 // not part of the normal setup flow. Unlike grant.ts, this OVERWRITES the
-// entire agents array rather than merging, so only run it when there's
-// nothing else in that array to preserve.
+// whole delegation document rather than merging, so only run it when there's
+// nothing else in that document to preserve.
 // RUN: npm run grant-raw --workspace scripts
 //
-// Diagnostic: bypass T3nClient.updateAgentAuth()'s convenience wrapper and
-// issue the raw `tee:user/contracts` / `agent-auth-update` call directly, the
-// same way Terminal 3's own docs show
-// (developers/adk/get-started/walkthrough/invoke-contract.mdx) and the same
-// way another developer reported working around a similar host/http.egress_denied
-// bug. Tests whether the wrapper has a bug that getAgentAuth()'s read-back
-// doesn't surface -- the SDK's own .d.ts says updateAgentAuth() does a
-// "read-merge-write" internally, so this SHOULD be equivalent for our
-// single-entry case, but a raw call rules out a wrapper-specific bug.
+// Diagnostic: bypass T3nClient.updateMemberDelegation()'s convenience wrapper
+// and issue the `member-delegation-update` call directly, the same way
+// Terminal 3's own docs show
+// (developers/adk/get-started/walkthrough/invoke-contract.mdx). With no wrapper
+// in between, the JSON below is literally what the contract sees, which
+// separates "the grant is wrong" from "the wrapper built it wrong".
 //
-// NOTE: unlike updateAgentAuth(), this does NOT read-merge-write -- it
-// overwrites the full `agents` array with exactly the one entry below. Only
-// safe to run when there's nothing else to preserve (confirmed true for this
-// project: grant.ts has always reported "preserved rows from prior policy: []").
-import { getScriptVersion, getNodeUrl } from "@terminal3/t3n-sdk";
+// Targets `tee:authorisations/contracts` because that is where the SDK
+// dispatches the delegation surface -- matching it is what makes this a
+// like-for-like comparison against the wrapper. `tee:user/contracts` exports
+// the same function over the same edge store, so either reaches the policy.
+//
+// NOTE: `member-delegation-update` is a full-document write -- the submitted
+// `{ grants, discover_dids }` IS the new state, with no per-field merge. Every
+// grant row and every discovery grant not listed below is dropped. Only safe to
+// run when there's nothing else to preserve (confirmed true for this project:
+// grant.ts has always reported "preserved rows from prior policy: []").
+// updateMemberDelegation() differs precisely here: it reads the document first
+// and merges, so it preserves the rest.
+import { getContractVersion, getNodeUrl } from "@terminal3/t3n-sdk";
 import { authenticate, requireEnv, CONTRACT_TAIL } from "./lib.js";
 
 const T3N_API_KEY = requireEnv("T3N_API_KEY");
 const AGENT_KEY = requireEnv("AGENT_KEY");
 const RELAY_BASE_URL = requireEnv("RELAY_BASE_URL");
+
+const DELEGATION_CONTRACT = "tee:authorisations/contracts";
 
 function relayHost(url: string): string {
   return new URL(url).host;
@@ -40,31 +48,31 @@ async function main() {
   const tenantId = tenantDid.slice("did:t3n:".length);
   const tenantScript = `z:${tenantId}:${CONTRACT_TAIL}`;
 
-  const userContractVersion = await getScriptVersion(getNodeUrl(), "tee:user/contracts");
-  console.log(`tee:user/contracts@${userContractVersion}`);
+  const delegationVersion = await getContractVersion(getNodeUrl(), DELEGATION_CONTRACT);
+  console.log(`${DELEGATION_CONTRACT}@${delegationVersion}`);
 
   const result = await t3n.executeAndDecode({
-    script_name: "tee:user/contracts",
-    script_version: userContractVersion,
-    function_name: "agent-auth-update",
+    contract_id: DELEGATION_CONTRACT,
+    contract_version: delegationVersion,
+    function_name: "member-delegation-update",
     input: {
-      agents: [
-        {
-          agentDid,
-          scripts: [
-            {
-              scriptName: tenantScript,
-              versionReq: null,
-              functions: ["pay-for-service", "get-ledger"],
-              allowedHosts: [relayHost(RELAY_BASE_URL)],
-            },
-          ],
-        },
-      ],
+      // Flat snake_case grant rows, one per function. `version_req` is omitted
+      // rather than sent as null -- an absent qualifier matches any registered
+      // version.
+      grants: ["pay-for-service", "get-ledger"].map((fn) => ({
+        grantee: agentDid,
+        contract_id: tenantScript,
+        function: fn,
+        scopes: [],
+        allowed_hosts: [relayHost(RELAY_BASE_URL)],
+      })),
+      // Document-level discovery grants. This demo grants none; an empty list
+      // persists as empty, which is what clears any that were set before.
+      discover_dids: [],
     },
   });
 
-  console.log("raw agent-auth-update result:", JSON.stringify(result, null, 2));
+  console.log("raw member-delegation-update result:", JSON.stringify(result, null, 2));
 }
 
 main().catch((err) => {

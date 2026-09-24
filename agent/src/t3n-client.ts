@@ -22,7 +22,7 @@ import {
   eth_get_address,
   metamask_sign,
   createEthAuthInput,
-  getScriptVersion,
+  getContractVersion,
   getNodeUrl,
 } from "@terminal3/t3n-sdk";
 
@@ -105,8 +105,8 @@ export interface PayForServiceResult {
 
 export async function payForService(args: PayForServiceArgs): Promise<PayForServiceResult> {
   const client = await getClient();
-  const scriptName = tenantScriptName();
-  const scriptVersion = await getScriptVersion(getNodeUrl(), scriptName);
+  const contractId = tenantScriptName();
+  const contractVersion = await getContractVersion(getNodeUrl(), contractId);
   // client.executeAndDecode() is the actual call into the Terminal 3 TEE
   // contract. The call shape:
   //   - function_name: which contract function to invoke ("pay-for-service"
@@ -117,8 +117,8 @@ export async function payForService(args: PayForServiceArgs): Promise<PayForServ
   //   - input: the function's arguments (PayForServiceArgs here), passed
   //     through to the contract as-is.
   return client.executeAndDecode<PayForServiceResult>({
-    script_name: scriptName,
-    script_version: scriptVersion,
+    contract_id: contractId,
+    contract_version: contractVersion,
     function_name: "pay-for-service",
     // pii_did tells the contract WHOSE grant to check for this call -- it is
     // NOT automatically the agent's own identity, and that distinction
@@ -127,12 +127,11 @@ export async function payForService(args: PayForServiceArgs): Promise<PayForServ
     // left to default.
     //
     // Delegated call: without pii_did this defaults to the agent's OWN did,
-    // so the node looks up AGENT_AUTH_MAP[agent_did] (empty) instead of
-    // AGENT_AUTH_MAP[tenant_did] (where the real grant lives) -- surfaces as
-    // host/http.egress_denied with allowed=None, not an auth/permission
-    // error, because the lookup itself "succeeds" against the wrong subject.
-    // Root-caused with Terminal 3's backend team -- see
-    // docs/DEVELOPER_BUILD_LOG.md §3o.
+    // so the node reads the agent's own delegation document (empty -- the
+    // agent never delegated anything to itself) instead of the tenant's,
+    // where the real grant lives. That surfaces as host/http.egress_denied
+    // with allowed=None, not an auth/permission error, because the lookup
+    // itself "succeeds" against the wrong subject.
     pii_did: TENANT_DID,
     input: args,
   });
@@ -165,11 +164,11 @@ export interface LedgerSnapshot {
 
 export async function getLedger(): Promise<LedgerSnapshot> {
   const client = await getClient();
-  const scriptName = tenantScriptName();
-  const scriptVersion = await getScriptVersion(getNodeUrl(), scriptName);
+  const contractId = tenantScriptName();
+  const contractVersion = await getContractVersion(getNodeUrl(), contractId);
   return client.executeAndDecode<LedgerSnapshot>({
-    script_name: scriptName,
-    script_version: scriptVersion,
+    contract_id: contractId,
+    contract_version: contractVersion,
     function_name: "get-ledger",
     // Same reasoning as payForService's pii_did -- this is the tenant's
     // ledger, not the agent's own; set explicitly rather than relying on
