@@ -1,14 +1,14 @@
 // Live-mode API route behind the dashboard's "Revoke Agent Access" button --
 // the demo's signature moment. Calls lib/t3n.ts's revokeAgent(), which runs
 // server-side only (the tenant/agent keys never reach the browser) and
-// clears the agent's allowedHosts grant on the TEE contract. See the
+// empties the agent's allowed_hosts on the TEE contract. See the
 // comment on revokeAgent() in lib/t3n.ts for exactly what this does and
 // does not do.
 import { NextResponse } from "next/server";
 import { revokeAgent } from "@/lib/t3n";
 
 // The live "wow moment" button. Credentials never touch the browser -- this
-// route runs the agent-auth-update grant-clearing call server-side.
+// route runs the member-delegation-update egress-clearing call server-side.
 export async function POST() {
   try {
     await revokeAgent();

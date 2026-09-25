@@ -13,8 +13,8 @@
 //   - resetBudget()  -- zeroes the session's running total, for re-running
 //                       a demo without waiting for a new session.
 //   - revokeAgent()  -- the dashboard's "Revoke" button. Its real effect is
-//                       narrower than it sounds: it clears the agent's
-//                       allowedHosts grant on the contract. It does NOT
+//                       narrower than it sounds: it empties the agent's
+//                       allowed_hosts on the contract. It does NOT
 //                       flip some data-plane toggle or kill a connection --
 //                       it's a live capability revocation. The agent keeps
 //                       whatever it already has in memory and can still
@@ -44,8 +44,9 @@ import {
   eth_get_address,
   metamask_sign,
   createEthAuthInput,
-  getScriptVersion,
+  getContractVersion,
   getNodeUrl,
+  type BoundGrant,
 } from "@terminal3/t3n-sdk";
 
 const MOCK_T3N = process.env.MOCK_T3N === "1";
@@ -138,11 +139,11 @@ export async function readLedger(): Promise<LedgerSnapshot> {
   if (MOCK_T3N) return getMockState();
 
   const { t3n, tenantDid } = await getTenant();
-  const scriptName = tenantScriptName(tenantDid);
-  const scriptVersion = await getScriptVersion(getNodeUrl(), scriptName);
+  const contractId = tenantScriptName(tenantDid);
+  const contractVersion = await getContractVersion(getNodeUrl(), contractId);
   return t3n.executeAndDecode<LedgerSnapshot>({
-    script_name: scriptName,
-    script_version: scriptVersion,
+    contract_id: contractId,
+    contract_version: contractVersion,
     function_name: "get-ledger",
     input: {},
   });
@@ -178,17 +179,23 @@ export async function revokeAgent(): Promise<void> {
   const agentDid = (await agentT3n.authenticate(createEthAuthInput(agentAddress))).value;
 
   const { t3n, tenantDid } = await getTenant();
-  // functions: [] is REJECTED by the node ("functions must not be empty (use
-  // [\"*\"] for all functions)") -- confirmed against live infrastructure.
-  // Clear allowedHosts only, keeping functions valid: the agent can still
-  // call pay-for-service, but its outbound call to the relay fails with
-  // host/http.egress_denied. See docs/DEVELOPER_BUILD_LOG.md §3t.
-  await t3n.updateAgentAuth(agentDid, {
-    scriptName: tenantScriptName(tenantDid),
-    versionReq: null,
-    functions: ["pay-for-service", "get-ledger"],
-    allowedHosts: [],
-  });
+  // Rewrite the same rows scripts/grant.ts wrote, with the egress allowance
+  // emptied rather than the rows removed: the agent can still call
+  // pay-for-service, but its outbound call to the relay fails with
+  // host/http.egress_denied.
+  //
+  // One row per function, and both in one call -- updateMemberDelegation
+  // read-merge-writes the whole delegation document, so per-row calls would
+  // race against each other.
+  const contractId = tenantScriptName(tenantDid);
+  const grants: BoundGrant[] = ["pay-for-service", "get-ledger"].map((fn) => ({
+    grantee: agentDid,
+    contract_id: contractId,
+    function: fn,
+    scopes: [],
+    allowed_hosts: [],
+  }));
+  await t3n.updateMemberDelegation(grants);
 }
 
 // Only used by the mock path -- lets the /api/events route append the

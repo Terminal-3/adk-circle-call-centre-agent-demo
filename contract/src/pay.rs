@@ -87,7 +87,7 @@ fn pay_for_service_wasm(req: PayRequest) -> Result<Vec<u8>, String> {
     // 1. Host allowlist — checked before anything else touches state. This checks
     //    the THIRD-PARTY service's host (e.g. nano.blockrun.ai), not our relay's
     //    host: it's the "which marketplace sellers can this agent pay" dimension,
-    //    separate from the agent-auth-update grant that gates the enclave's own
+    //    separate from the member-delegation grant that gates the enclave's own
     //    fixed egress to the relay. See policy.rs's Policy::host_allowlist doc.
     let host = policy::extract_host(&req.service_url)?;
     if let Err(reason) = policy::check_host_allowlist(&policy, &host) {

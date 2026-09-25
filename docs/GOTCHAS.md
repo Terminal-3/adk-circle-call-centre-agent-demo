@@ -7,12 +7,12 @@ Real bugs hit while building this — read before you build your own integration
 ### Always set `pii_did` explicitly on metered/delegated calls
 
 Every `pay-for-service`/`get-ledger` call that omits the optional `pii_did` field silently
-defaults to treating the invocation as a self-call by the **agent's own DID** — the node looks
-up `AGENT_AUTH_MAP[agent_did]` (empty, since the agent never granted itself anything) instead of
-`AGENT_AUTH_MAP[tenant_did]`, where the real grant actually lives. That resolves to
+defaults to treating the invocation as a self-call by the **agent's own DID** — the node reads
+the **agent's own** delegation document (empty, since the agent never delegated itself anything)
+instead of the **tenant's**, where the real grant actually lives. That resolves to
 `allowed=None` and surfaces as `host/http.egress_denied`, which reads exactly like a
 misconfigured allowlist — it is actually the wrong lookup subject entirely. Confusingly,
-`getAgentAuth()` read-backs look perfect the whole time because diagnostic reads are typically
+`getMemberDelegation()` read-backs look perfect the whole time because diagnostic reads are typically
 authenticated as the tenant (the right subject), so they check the right place even while the
 invocation itself doesn't. Fix: always pass `pii_did` set to the grant's actual subject (usually
 the tenant DID) on every metered call.
@@ -49,14 +49,17 @@ re-point each map's ACL (readers/writers) at the new `contract_id` — don't ass
 alone carries access forward. Build this into your provisioning script as a standard step, not a
 one-off manual fix.
 
-### `functions` must never be empty when revoking access
+### Prefer emptying `allowed_hosts` over dropping grant rows when revoking access
 
-A revocation flow that tries to set both `functions: []` and `allowedHosts: []` is rejected
-outright by the node (`functions must not be empty (use ["*"] for all functions)`). To revoke an
-agent's ability to actually move money/spend without disabling the function call entirely, clear
-`allowedHosts: []` only, and keep `functions` populated (or `["*"]`). This is arguably the more
-precise revocation story anyway: the agent can still invoke the function, it just can no longer
-reach any egress host to act on it.
+A delegation grant authorizes exactly one function, so authorizing an agent on N functions means
+N rows, each repeating the egress hosts that function needs. That makes revocation a choice of
+granularity. Rewriting the same rows with `allowed_hosts: []` is the surgical option and the more
+precise revocation story: the agent can still invoke the function, it just can no longer reach any
+egress host to act on it. Dropping the rows entirely is the blunt option, and it needs a different
+call — the read-merge-write `updateMemberDelegation` only ever adds or replaces rows, never
+removes them. Either way, pass every row in a single call: the read-merge-write re-reads the whole
+document, so one call per row races against itself and the later merge can silently drop the
+earlier row.
 
 ### Agent identities need their own credit balance, and metering charges on every attempt
 
@@ -72,7 +75,7 @@ burn through a fixed grant much faster than the number of successful payments wo
 
 A contract that pays third-party services typically has two independent allowlists that answer
 different questions: which host can the enclave's outbound HTTP call reach at all (the
-agent-auth/egress grant), versus which marketplace seller's URL is this agent policy-permitted to
+delegation grant's `allowed_hosts`), versus which marketplace seller's URL is this agent policy-permitted to
 pay (a business-policy allowlist checked against the request's target service URL). Seeding the
 second with a value that belongs to the first (e.g. your own relay's host) guarantees every real
 payment is denied, since a real marketplace host will never match your relay's own hostname. Keep

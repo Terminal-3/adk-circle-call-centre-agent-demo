@@ -47,7 +47,7 @@ const SESSION_BUDGET_USDC = Number(process.env.SESSION_BUDGET_USDC ?? "1.0");
 // "api.tavily.com", extracted from a service's own `resource` URL (see
 // services/payment-relay/mock-data/services.json). This is NOT the relay's
 // own host: the relay's host is a separate dimension, gated by Terminal 3's
-// own agent-auth-update grant (scripts/grant.ts), not by this policy field.
+// own member-delegation grant (scripts/grant.ts), not by this policy field.
 // Defaults to the real research/comms providers this demo's task points the
 // agent at (Tavily, Parallel.ai, StablePhone -- all independently confirmed
 // to support x402 payments). StablePhone's priority-call tier ($0.89/call)

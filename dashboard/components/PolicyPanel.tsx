@@ -10,7 +10,7 @@ import { useState } from "react";
 
 // In replay mode there's no live backend to call -- clicking these buttons
 // advances/restarts the same fixed, static narrative (see lib/useReplay.ts)
-// instead of making a real agent-auth-update call. This is what keeps the
+// instead of making a real member-delegation-update call. This is what keeps the
 // public site safe to deploy with no server state at all (see
 // docs/DEVELOPER_BUILD_LOG.md on why a live "Run Live" button isn't exposed
 // to anonymous visitors).

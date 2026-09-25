@@ -12,7 +12,7 @@
 // component, not per-function) rather than anything specific to the
 // http-call code path. Safe, free, no relay/Circle dependency at all.
 import { authenticate, requireEnv, CONTRACT_TAIL } from "./lib.js";
-import { getScriptVersion, getNodeUrl } from "@terminal3/t3n-sdk";
+import { getContractVersion, getNodeUrl } from "@terminal3/t3n-sdk";
 
 const AGENT_KEY = requireEnv("AGENT_KEY");
 const TENANT_DID = requireEnv("T3N_TENANT_DID");
@@ -20,13 +20,13 @@ const TENANT_DID = requireEnv("T3N_TENANT_DID");
 async function main() {
   const { t3n } = await authenticate(AGENT_KEY);
   const tenantId = TENANT_DID.slice("did:t3n:".length);
-  const scriptName = `z:${tenantId}:${CONTRACT_TAIL}`;
-  const scriptVersion = await getScriptVersion(getNodeUrl(), scriptName);
+  const contractId = `z:${tenantId}:${CONTRACT_TAIL}`;
+  const contractVersion = await getContractVersion(getNodeUrl(), contractId);
 
-  console.log(`calling get-ledger on ${scriptName}@${scriptVersion}`);
+  console.log(`calling get-ledger on ${contractId}@${contractVersion}`);
   const result = await t3n.executeAndDecode({
-    script_name: scriptName,
-    script_version: scriptVersion,
+    contract_id: contractId,
+    contract_version: contractVersion,
     function_name: "get-ledger",
     pii_did: TENANT_DID, // see docs/DEVELOPER_BUILD_LOG.md §3o
     input: {},

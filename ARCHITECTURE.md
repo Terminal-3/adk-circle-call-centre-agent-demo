@@ -42,7 +42,7 @@ imports" model. Two exported functions:
 
   Note there are **two different allowlists** here, not one: `policy.host_allowlist` gates
   which **marketplace service** (e.g. `api.tavily.com`) the agent may direct a payment to —
-  business logic enforced inside `pay-for-service` itself. The `agent-auth-update` grant
+  business logic enforced inside `pay-for-service` itself. The member-delegation grant
   (`scripts/grant.ts`) separately gates the **contract's own fixed egress** to your relay,
   at the Terminal 3 host-capability layer. Confusing the two — e.g. seeding one allowlist
   with the other's values — is a real, easy mistake; see `docs/GOTCHAS.md`.
@@ -66,12 +66,11 @@ Terminal 3's `time`/`clock` host interface isn't available to tenant contracts t
 there's no enclave-native clock source for a true daily window yet — build that at the
 application layer if you need it.
 
-**Revocation** is not a contract function. The data owner clears the agent's
-`agent-auth-update` grant (`scripts/revoke.ts` / the dashboard's Revoke button, via
-`T3nClient.updateAgentAuth(agentDid, { functions: [...], allowedHosts: [] })` — note
-`functions` must stay non-empty; see `docs/GOTCHAS.md`), and the next `pay-for-service`
-call's outbound call to the relay fails with `host/http.egress_denied` — instant, no
-redeploy.
+**Revocation** is not a contract function. The data owner empties the agent's egress
+allowance — `scripts/revoke.ts` / the dashboard's Revoke button rewrite the grant rows via
+`T3nClient.updateMemberDelegation(...)` with `allowed_hosts: []`, one row per function and
+all in a single call (see `docs/GOTCHAS.md`). The next `pay-for-service` call's outbound
+call to the relay then fails with `host/http.egress_denied` — instant, no redeploy.
 
 ## The relay (`services/payment-relay/`)
 
